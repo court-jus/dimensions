@@ -1,0 +1,6 @@
+name=Dimensions
+author=Ghislain Lévêque
+description=A multi-dimensional exploration game
+bundleID=cc.leveque.dimensions
+buildNumber=1
+version=0.0.1
