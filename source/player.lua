@@ -24,10 +24,10 @@ ROTATIONS = {
 }
 
 function Player:init()
-    self.X = 2
-    self.Y = 2
-    self.Z = 2
-    self.V = 2
+    self.X = 8
+    self.Y = 9
+    self.Z = 9
+    self.V = 9
     self.W = 2
     self.coordDisplay = gfx.sprite.new(gfx.image.new(100, 240))
     self.coordDisplay:moveTo(380, 120)
@@ -35,7 +35,7 @@ function Player:init()
     self.sprite = gfx.sprite.new(images[self.Z])
     self.sprite:setZIndex(100)
     self.sprite:add()
-    self.directions = 1
+    self.directions = 4
     self:add()
     self:updateSprite()
 end
@@ -73,14 +73,10 @@ function Player:playerMove(direction, delta)
             (self[direction] + delta > 9) or
             (not CAN_DIG and MAP ~= nil and MAP.walls[newPos.X][newPos.Y][newPos.Z][newPos.V][newPos.W] == 1)
         ) then
-        return
+        return false
     end
     self[direction] += delta
-    if MAP ~= nil then
-        MAP:updateSprites()
-    end
-    self:updateSprite()
-    self:updateHud()
+    return true
 end
 
 function Player:updateSprite()
@@ -98,30 +94,42 @@ function Player:updateHud()
     self.coordDisplay:setImage(image)
 end
 
-function Player:update()
+function Player:handleInput()
+    local hasMoved = false
     if pd.buttonJustPressed(pd.kButtonUp) then
-        self:playerMove(ROTATIONS[self.directions]["ud"], -1)
+        hasMoved = hasMoved or self:playerMove(ROTATIONS[self.directions]["ud"], -1)
     end
     if pd.buttonJustPressed(pd.kButtonDown) then
-        self:playerMove(ROTATIONS[self.directions]["ud"], 1)
+        hasMoved = hasMoved or self:playerMove(ROTATIONS[self.directions]["ud"], 1)
     end
     if pd.buttonJustPressed(pd.kButtonLeft) then
-        self:playerMove(ROTATIONS[self.directions]["lr"], -1)
+        hasMoved = hasMoved or self:playerMove(ROTATIONS[self.directions]["lr"], -1)
     end
     if pd.buttonJustPressed(pd.kButtonRight) then
-        self:playerMove(ROTATIONS[self.directions]["lr"], 1)
+        hasMoved = hasMoved or self:playerMove(ROTATIONS[self.directions]["lr"], 1)
     end
     if pd.buttonJustPressed(pd.kButtonB) then
         self.directions = self.directions + 1
         if self.directions > #ROTATIONS then
             self.directions = 1
         end
-        if MAP ~= nil then
-            MAP:updateSprites()
-        end
-        self:updateSprite()
-        self:updateHud()
+        hasMoved = true
     end
+    if hasMoved then
+        self:handleUpdateGui()
+    end
+end
+
+function Player:handleUpdateGui()
+    if MAP ~= nil then
+        MAP:updateSprites()
+    end
+    self:updateSprite()
+    self:updateHud()
+end
+
+function Player:update()
+    self:handleInput()
 end
 
 function Player:getText()
