@@ -7,12 +7,13 @@ local gfx <const> = playdate.graphics
 
 PLAYER = nil
 MAP = nil
+CAN_DIG = false
 
 class('GameScene').extends(gfx.sprite)
 
 function GameScene:init()
     PLAYER = Player()
-    MAP = Map(player)
+    MAP = Map()
     self:add()
     MAP:updateSprites()
     PLAYER:updateHud()
