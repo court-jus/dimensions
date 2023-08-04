@@ -3,7 +3,7 @@ import "wall"
 
 local pd <const> = playdate
 local gfx <const> = pd.graphics
-local load_map <const> = "map_second.json"
+local load_map <const> = "map_third.json"
 
 class('Map').extends(gfx.sprite)
 

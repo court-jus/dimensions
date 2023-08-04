@@ -23,19 +23,35 @@ ROTATIONS = {
     { ud = "V", lr = "W" },
 }
 
+JUMP_FORCE = -3
+
+PLATFORMER_FALL_DELAY = 200
+GRAVITY_DELAY = 60
+
 function Player:init()
     self.X = 8
     self.Y = 9
     self.Z = 9
     self.V = 9
     self.W = 2
+    self.directions = 3
     self.coordDisplay = gfx.sprite.new(gfx.image.new(100, 240))
     self.coordDisplay:moveTo(380, 120)
     self.coordDisplay:add()
     self.sprite = gfx.sprite.new(images[self.Z])
     self.sprite:setZIndex(100)
     self.sprite:add()
-    self.directions = 4
+    self.platformerState = {
+        state = nil,
+        nextFall = nil,
+        velocity = 0,
+    }
+    self.gravityState = {
+        state = nil,
+        nextFall = nil,
+        gravity = "down",
+    }
+    self.redrawNeeded = true
     self:add()
     self:updateSprite()
 end
@@ -73,10 +89,10 @@ function Player:playerMove(direction, delta)
             (self[direction] + delta > 9) or
             (not CAN_DIG and MAP ~= nil and MAP.walls[newPos.X][newPos.Y][newPos.Z][newPos.V][newPos.W] == 1)
         ) then
-        return false
+        return
     end
     self[direction] += delta
-    return true
+    self.redrawNeeded = true
 end
 
 function Player:updateSprite()
@@ -94,42 +110,158 @@ function Player:updateHud()
     self.coordDisplay:setImage(image)
 end
 
-function Player:handleInput()
-    local hasMoved = false
+function Player:handleInputLaby()
     if pd.buttonJustPressed(pd.kButtonUp) then
-        hasMoved = hasMoved or self:playerMove(ROTATIONS[self.directions]["ud"], -1)
+        self:playerMove(ROTATIONS[self.directions]["ud"], -1)
     end
     if pd.buttonJustPressed(pd.kButtonDown) then
-        hasMoved = hasMoved or self:playerMove(ROTATIONS[self.directions]["ud"], 1)
+        self:playerMove(ROTATIONS[self.directions]["ud"], 1)
     end
     if pd.buttonJustPressed(pd.kButtonLeft) then
-        hasMoved = hasMoved or self:playerMove(ROTATIONS[self.directions]["lr"], -1)
+        self:playerMove(ROTATIONS[self.directions]["lr"], -1)
     end
     if pd.buttonJustPressed(pd.kButtonRight) then
-        hasMoved = hasMoved or self:playerMove(ROTATIONS[self.directions]["lr"], 1)
+        self:playerMove(ROTATIONS[self.directions]["lr"], 1)
     end
+end
+
+function Player:handleInputPlatformer()
+    if pd.buttonJustPressed(pd.kButtonUp) and self.platformerState.state == "standing" then
+        self.platformerState.velocity = JUMP_FORCE
+    end
+    if pd.buttonJustPressed(pd.kButtonLeft) then
+        self:playerMove(ROTATIONS[self.directions]["lr"], -1)
+    end
+    if pd.buttonJustPressed(pd.kButtonRight) then
+        self:playerMove(ROTATIONS[self.directions]["lr"], 1)
+    end
+end
+
+function Player:updatePhysicsPlatformer()
+    if MAP == nil then return end
+    local mapSlice = MAP.walls[self.X][self.Y][self.Z]
+    if self.platformerState.velocity < 0 and mapSlice[self.V - 1][self.W] == 1 then
+        self.platformerState.velocity = 0
+    elseif self.platformerState.velocity < 0 and mapSlice[self.V - 1][self.W] ~= 1 then
+        self.platformerState.velocity += 1
+        self:playerMove("V", -1)
+    end
+    if self.platformerState.state ~= "falling" and mapSlice[self.V + 1][self.W] ~= 1 then
+        self.platformerState.state = "falling"
+    elseif self.platformerState.state ~= "standing" and mapSlice[self.V+1][self.W] == 1 then
+        self.platformerState.state = "standing"
+    end
+    now = pd.getCurrentTimeMilliseconds()
+    if self.platformerState.state == "falling" and (self.platformerState.nextFall == nil or self.platformerState.nextFall < now) then
+        self.platformerState.nextFall = now + PLATFORMER_FALL_DELAY
+        self:playerMove("V", 1)
+    end
+end
+
+function Player:handleInputGravity()
+    if self.gravityState.state ~= "standing" then return end
+    if pd.buttonJustPressed(pd.kButtonUp) then
+        self.gravityState.gravity = "up"
+    end
+    if pd.buttonJustPressed(pd.kButtonLeft) then
+        self.gravityState.gravity = "left"
+    end
+    if pd.buttonJustPressed(pd.kButtonRight) then
+        self.gravityState.gravity = "right"
+    end
+    if pd.buttonJustPressed(pd.kButtonDown) then
+        self.gravityState.gravity = "down"
+    end
+end
+
+function Player:updatePhysicsGravity()
+    if MAP == nil then return end
+    local mapSlice = MAP.walls[self.X][self.Y]
+    local neighbors = {
+        up = mapSlice[self.Z][self.V - 1][self.W],
+        down = mapSlice[self.Z][self.V + 1][self.W],
+        left = mapSlice[self.Z - 1][self.V][self.W],
+        right = mapSlice[self.Z + 1][self.V][self.W],
+    }
+    if self.gravityState.state ~= "falling" and neighbors[self.gravityState.gravity] ~= 1 then
+        self.gravityState.state = "falling"
+    elseif self.gravityState.state ~= "standing" and neighbors[self.gravityState.gravity] == 1 then
+        self.gravityState.state = "standing"
+    end
+    now = pd.getCurrentTimeMilliseconds()
+    if self.gravityState.state == "falling" and (self.gravityState.nextFall == nil or self.gravityState.nextFall < now) then
+        local fallDirection = {
+            up = {direction="V", delta=-1},
+            down = { direction = "V", delta = 1 },
+            left = { direction = "Z", delta = -1 },
+            right = { direction = "Z", delta = 1 },
+        }
+        self.gravityState.nextFall = now + GRAVITY_DELAY
+        self:playerMove(fallDirection[self.gravityState.gravity].direction, fallDirection[self.gravityState.gravity].delta)
+    end
+end
+
+function Player:handleInput()
+    if self.directions == 4 then
+        self:handleInputPlatformer()
+    elseif self.directions == 3 then
+        self:handleInputGravity()
+    else
+        self:handleInputLaby()
+    end
+    self:handleInputGlobal()
+end
+
+function Player:handleInputGlobal()
     if pd.buttonJustPressed(pd.kButtonB) then
         self.directions = self.directions + 1
         if self.directions > #ROTATIONS then
             self.directions = 1
         end
-        hasMoved = true
+        self.redrawNeeded = true
     end
-    if hasMoved then
-        self:handleUpdateGui()
+end
+
+function Player:updatePhysics()
+    if self.directions == 4 then
+        self:updatePhysicsPlatformer()
+    else
+        self.platformerState = {
+            state = nil,
+            nextFall = nil,
+            velocity = 0,
+        }
+    end
+    if self.directions == 3 then
+        self:updatePhysicsGravity()
+    else
+        self.gravityState = {
+            state = nil,
+            nextFall = nil,
+            gravity = "down",
+        }
     end
 end
 
 function Player:handleUpdateGui()
+    if not self.redrawNeeded then return end
     if MAP ~= nil then
         MAP:updateSprites()
     end
     self:updateSprite()
     self:updateHud()
+    self.redrawNeeded = false
 end
 
 function Player:update()
-    self:handleInput()
+    if CAN_DIG then
+        self:handleInputLaby()
+        self:handleInputGlobal()
+    else
+        self:handleInput()
+        self:updatePhysics()
+    end
+    self:handleUpdateGui()
 end
 
 function Player:getText()
