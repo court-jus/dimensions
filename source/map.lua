@@ -3,7 +3,7 @@ import "wall"
 
 local pd <const> = playdate
 local gfx <const> = pd.graphics
-local load_map <const> = "map_third.json"
+local load_map <const> = "map_4.json"
 
 class('Map').extends(gfx.sprite)
 
@@ -57,7 +57,7 @@ end
 
 function Map:updateSprites()
     -- Called when the player moves
-    if CAN_DIG then
+    if CAN_DIG and not pd.isCrankDocked() then
         self.walls[PLAYER.X][PLAYER.Y][PLAYER.Z][PLAYER.V][PLAYER.W] = 0
     end
     for _, sprite in ipairs(self.sprites) do

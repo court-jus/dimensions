@@ -85,9 +85,9 @@ function Player:playerMove(direction, delta)
     local newPos = { X = self.X, Y = self.Y, Z = self.Z, V = self.V, W = self.W }
     newPos[direction] += delta
     if (
-            (self[direction] + delta < 2) or
-            (self[direction] + delta > 9) or
-            (not CAN_DIG and MAP ~= nil and MAP.walls[newPos.X][newPos.Y][newPos.Z][newPos.V][newPos.W] == 1)
+            (newPos[direction] < 2) or
+            (newPos[direction] > 9) or
+            (not (CAN_DIG and not pd.isCrankDocked()) and MAP ~= nil and MAP.walls[newPos.X][newPos.Y][newPos.Z][newPos.V][newPos.W] == 1)
         ) then
         return
     end
@@ -254,7 +254,7 @@ function Player:handleUpdateGui()
 end
 
 function Player:update()
-    if CAN_DIG then
+    if CAN_DIG and not pd.isCrankDocked() then
         self:handleInputLaby()
         self:handleInputGlobal()
     else
