@@ -57,6 +57,9 @@ function Player:init()
         nextFall = nil,
         gravity = "down",
     }
+    self.flags = {
+        levelEditor = true,
+    }
     self.redrawNeeded = true
     self:add()
     self:updateSprite()
@@ -93,7 +96,7 @@ function Player:playerMove(direction, delta)
     if (
             (newPos[direction] < 2) or
             (newPos[direction] > 9) or
-            (not (CAN_DIG and not pd.isCrankDocked()) and MAP ~= nil and MAP.walls[newPos.X][newPos.Y][newPos.Z][newPos.V][newPos.W] == CT_WALL)
+            (not (self.flags.levelEditor or self.flags.digging) and MAP ~= nil and MAP.walls[newPos.X][newPos.Y][newPos.Z][newPos.V][newPos.W] == CT_WALL)
         ) then
         return
     end
@@ -293,7 +296,7 @@ function Player:handleUpdateGui()
 end
 
 function Player:update()
-    if CAN_DIG and not pd.isCrankDocked() then
+    if self.flags.levelEditor then
         self:handleInputLaby()
         self:handleInputGlobal()
     else

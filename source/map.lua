@@ -63,7 +63,7 @@ end
 
 function Map:updateSprites()
     -- Called when the player moves
-    if CAN_DIG and not pd.isCrankDocked() then
+    if PLAYER.flags.digging then
         self.walls[PLAYER.X][PLAYER.Y][PLAYER.Z][PLAYER.V][PLAYER.W] = 0
     end
     for _, sprite in ipairs(self.sprites) do
