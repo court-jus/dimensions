@@ -1,11 +1,11 @@
-import "gameScene"
+import "menuScene"
 
 local pd <const> = playdate
 local gfx <const> = playdate.graphics
 
 class('GameOverScene').extends(gfx.sprite)
 
-function GameOverScene:init()
+function GameOverScene:init(_)
     local text = "Game Over"
     local gameOverImage = gfx.image.new(gfx.getTextSize(text))
     gfx.pushContext(gameOverImage)
@@ -19,6 +19,6 @@ end
 
 function GameOverScene:update()
     if pd.buttonJustPressed(pd.kButtonA) then
-        SCENE_MANAGER:switchScene(GameScene)
+        SCENE_MANAGER:switchScene(MenuScene, nil)
     end
 end

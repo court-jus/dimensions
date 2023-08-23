@@ -1,6 +1,3 @@
--- Scene manager
--- based on awesome video by SquidGod
--- https://www.youtube.com/watch?v=3LoMft137z8
 import "CoreLibs/timer"
 
 local pd <const> = playdate
@@ -8,14 +5,32 @@ local gfx <const> = playdate.graphics
 
 class('SceneManager').extends()
 
-function SceneManager:switchScene(scene)
-    self.newScene = scene
-    self:loadNewScene()
+function SceneManager:init()
+    local loadedData = pd.datastore.read("settings")
+    self.lang = (loadedData ~= nil and loadedData.lang ~= nil) and loadedData.lang or "en"
+    self.introSeen = (loadedData ~= nil and loadedData.introSeen ~= nil) and loadedData.introSeen or false
 end
 
-function SceneManager:loadNewScene()
+function SceneManager:saveSettings()
+    pd.datastore.write({
+        lang = self.lang,
+        introSeen = self.introSeen,
+    }, "settings")
+end
+
+function SceneManager:toggleLang()
+    self.lang = self.lang == "fr" and "en" or "fr"
+    self:saveSettings()
+end
+
+function SceneManager:switchScene(scene, options)
+    self.newScene = scene
+    self:loadNewScene(options)
+end
+
+function SceneManager:loadNewScene(options)
     self:cleanupScene()
-    self.newScene()
+    self.newScene(options)
 end
 
 function SceneManager:cleanupScene()

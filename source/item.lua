@@ -1,27 +1,33 @@
+import "dialog"
+
 local pd <const> = playdate
 local gfx <const> = playdate.graphics
 
-local itemImage = gfx.image.new("Images/item")
+local images <const> = {
+    item = gfx.image.new("Images/item"),
+    pnj = gfx.image.new("Images/pnj"),
+    house = gfx.image.new("Images/house"),
+    flower = gfx.image.new("Images/flower"),
+    sign = gfx.image.new("Images/sign"),
+}
+
+
 
 class('Item').extends(gfx.sprite)
 
-function Item:init(v, w, x, y, z)
-    self.V = v
-    self.W = w
-    self.X = x
-    self.Y = y
-    self.Z = z
-    self.visible = false
+function Item:init(parameters)
+    self.type = "item"
+    self.extra = {}
     self.sprite = gfx.sprite.new(self:chooseImage())
-    self.sprite:moveTo(self.X * 24 - 12, self.Y * 24 - 12)
     self.sprite:setZIndex(50)
     self.sprite:setVisible(false)
+    self:loadState(parameters)
     self.sprite:add()
     self:add()
 end
 
 function Item:chooseImage()
-    return itemImage
+    return images[self.type]
 end
 
 function Item:update()
@@ -48,6 +54,13 @@ function Item:update()
     end
 end
 
+function Item:action()
+    if (self.type == "pnj" or self.type == "sign" or self.type == "house") and self.extra["text_" .. SCENE_MANAGER.lang] ~= nil and MAP ~= nil and MAP.visibleDialog == nil then
+        local text = self.extra["text_" .. SCENE_MANAGER.lang]
+        MAP.visibleDialog = Dialog(text)
+    end
+end
+
 function Item:dumpState()
     return {
         X = self.X,
@@ -56,6 +69,8 @@ function Item:dumpState()
         V = self.V,
         W = self.W,
         visible = self.visible,
+        type = self.type,
+        extra = self.extra,
     }
 end
 
@@ -66,8 +81,13 @@ function Item:loadState(state)
     self.V = state.V
     self.W = state.W
     self.visible = state.visible
+    self.type = state.type
+    self.extra = state.extra
     self.sprite:setImage(self:chooseImage())
     if self.visible then
+        self.sprite:moveTo(self.X * 24 - 12, self.Y * 24 - 12)
         self.sprite:setVisible(true)
+    else
+        self.sprite:setVisible(false)
     end
 end

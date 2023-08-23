@@ -11,7 +11,7 @@ CAN_DIG = false
 
 class('GameScene').extends(gfx.sprite)
 
-function GameScene:init()
+function GameScene:init(_)
     PLAYER = Player()
     MAP = Map()
     self:add()
@@ -20,8 +20,8 @@ function GameScene:init()
 end
 
 function GameScene:update()
-    if pd.buttonJustPressed(pd.kButtonA) then
-        MAP:saveMap()
-        SCENE_MANAGER:switchScene(GameOverScene)
+    if pd.buttonJustPressed(pd.kButtonA) and (MAP == nil or MAP.visibleDialog == nil) then
+        -- MAP:saveMap()
+        SCENE_MANAGER:switchScene(GameOverScene, nil)
     end
 end

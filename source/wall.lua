@@ -2,6 +2,7 @@ import "item"
 
 local pd <const> = playdate
 local gfx <const> = pd.graphics
+local ladderImage <const> = gfx.image.new("Images/ladder")
 
 class('Wall').extends(gfx.sprite)
 
@@ -40,13 +41,10 @@ function Wall:init(x, y)
     self:add()
 end
 
-function Wall:chooseImage()
-    local image = self.sprite:getImage()
-    if PLAYER == nil or MAP == nil then return image end
+function Wall:getType()
+    if PLAYER == nil or MAP == nil then return false end
     local ud = ROTATIONS[PLAYER.directions].ud -- mapped to self.Y
     local lr = ROTATIONS[PLAYER.directions].lr -- mapped to self.X
-    gfx.pushContext(image)
-    gfx.clear()
     local dimensions = {
         X = PLAYER.X,
         Y = PLAYER.Y,
@@ -56,9 +54,28 @@ function Wall:chooseImage()
     }
     dimensions[ud] = self.Y
     dimensions[lr] = self.X
-    if MAP.walls[dimensions.X][dimensions.Y][dimensions.Z][dimensions.V][dimensions.W] == 1 then
+    return MAP.walls[dimensions.X][dimensions.Y][dimensions.Z][dimensions.V][dimensions.W]
+end
+
+function Wall:chooseImage()
+    local image = self.sprite:getImage()
+    if PLAYER == nil or MAP == nil then return image end
+    gfx.pushContext(image)
+    gfx.clear()
+    local cellType = self:getType()
+    if cellType == 1 then -- Wall
+        local ud = ROTATIONS[PLAYER.directions].ud -- mapped to self.Y
+        local lr = ROTATIONS[PLAYER.directions].lr -- mapped to self.X
+        local dimensions = {
+            V = PLAYER.V,
+            W = PLAYER.W,
+        }
+        dimensions[ud] = self.Y
+        dimensions[lr] = self.X
         vWalls[dimensions.V]:draw(0, 0)
         wWalls[dimensions.W]:draw(0, 0)
+    elseif cellType == 2 and PLAYER.directions == 4 then -- Ladder
+        ladderImage:draw(0, 0)
     end
     gfx.popContext()
     return image

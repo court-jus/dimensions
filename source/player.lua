@@ -3,7 +3,7 @@ local gfx <const> = playdate.graphics
 
 class('Player').extends(gfx.sprite)
 
-local images = {
+local images <const> = {
     gfx.image.new("Images/player01"),
     gfx.image.new("Images/player02"),
     gfx.image.new("Images/player03"),
@@ -15,6 +15,7 @@ local images = {
     gfx.image.new("Images/player09"),
     gfx.image.new("Images/player10"),
 }
+local topImage <const> = gfx.image.new("Images/playertop")
 
 ROTATIONS = {
     { ud = "Y", lr = "X" },
@@ -23,19 +24,24 @@ ROTATIONS = {
     { ud = "V", lr = "W" },
 }
 
+-- Cell types
+CT_EMPTY = 0
+CT_WALL = 1
+CT_LADDER = 2
+
 JUMP_FORCE = -3
 
 PLATFORMER_FALL_DELAY = 200
 GRAVITY_DELAY = 60
 
 function Player:init()
-    self.X = 8
-    self.Y = 9
-    self.Z = 9
-    self.V = 9
+    self.X = 2
+    self.Y = 2
+    self.Z = 2
+    self.V = 2
     self.W = 2
-    self.directions = 3
-    self.coordDisplay = gfx.sprite.new(gfx.image.new(100, 240))
+    self.directions = 1
+    self.coordDisplay = gfx.sprite.new(gfx.image.new(160, 240))
     self.coordDisplay:moveTo(380, 120)
     self.coordDisplay:add()
     self.sprite = gfx.sprite.new(images[self.Z])
@@ -87,16 +93,23 @@ function Player:playerMove(direction, delta)
     if (
             (newPos[direction] < 2) or
             (newPos[direction] > 9) or
-            (not (CAN_DIG and not pd.isCrankDocked()) and MAP ~= nil and MAP.walls[newPos.X][newPos.Y][newPos.Z][newPos.V][newPos.W] == 1)
+            (not (CAN_DIG and not pd.isCrankDocked()) and MAP ~= nil and MAP.walls[newPos.X][newPos.Y][newPos.Z][newPos.V][newPos.W] == CT_WALL)
         ) then
         return
     end
     self[direction] += delta
+    if MAP ~= nil then
+        MAP:activateItem()
+    end
     self.redrawNeeded = true
 end
 
 function Player:updateSprite()
-    self.sprite:setImage(images[self.Z])
+    if self.directions == 1 or self.directions == 2 then
+        self.sprite:setImage(topImage)
+    else
+        self.sprite:setImage(images[2])
+    end
     self.sprite:moveTo(self[ROTATIONS[self.directions].lr] * 24 - 12, self[ROTATIONS[self.directions].ud] * 24 - 12)
 end
 
@@ -105,29 +118,36 @@ function Player:updateHud()
     local text = PLAYER:getText()
     gfx.pushContext(image)
     gfx.clear()
-    gfx.drawTextAligned(text, 50, 10, 1)
+    gfx.drawTextAligned(text, 80, 10, 1)
     gfx.popContext()
     self.coordDisplay:setImage(image)
 end
 
 function Player:handleInputLaby()
     if pd.buttonJustPressed(pd.kButtonUp) then
+        self.sprite:setRotation(180)
         self:playerMove(ROTATIONS[self.directions]["ud"], -1)
     end
     if pd.buttonJustPressed(pd.kButtonDown) then
+        self.sprite:setRotation(0)
         self:playerMove(ROTATIONS[self.directions]["ud"], 1)
     end
     if pd.buttonJustPressed(pd.kButtonLeft) then
+        self.sprite:setRotation(90)
         self:playerMove(ROTATIONS[self.directions]["lr"], -1)
     end
     if pd.buttonJustPressed(pd.kButtonRight) then
+        self.sprite:setRotation(-90)
         self:playerMove(ROTATIONS[self.directions]["lr"], 1)
     end
 end
 
 function Player:handleInputPlatformer()
-    if pd.buttonJustPressed(pd.kButtonUp) and self.platformerState.state == "standing" then
-        self.platformerState.velocity = JUMP_FORCE
+    if pd.buttonJustPressed(pd.kButtonUp) and self.platformerState.state == "climbing" then
+        self:playerMove(ROTATIONS[self.directions]["ud"], -1)
+    end
+    if pd.buttonJustPressed(pd.kButtonDown) and self.platformerState.state == "climbing" then
+        self:playerMove(ROTATIONS[self.directions]["ud"], 1)
     end
     if pd.buttonJustPressed(pd.kButtonLeft) then
         self:playerMove(ROTATIONS[self.directions]["lr"], -1)
@@ -140,16 +160,25 @@ end
 function Player:updatePhysicsPlatformer()
     if MAP == nil then return end
     local mapSlice = MAP.walls[self.X][self.Y][self.Z]
-    if self.platformerState.velocity < 0 and mapSlice[self.V - 1][self.W] == 1 then
+    if self.platformerState.velocity < 0 and mapSlice[self.V - 1][self.W] == CT_WALL then
         self.platformerState.velocity = 0
-    elseif self.platformerState.velocity < 0 and mapSlice[self.V - 1][self.W] ~= 1 then
+    elseif self.platformerState.velocity < 0 and mapSlice[self.V - 1][self.W] ~= CT_WALL then
         self.platformerState.velocity += 1
         self:playerMove("V", -1)
     end
-    if self.platformerState.state ~= "falling" and mapSlice[self.V + 1][self.W] ~= 1 then
-        self.platformerState.state = "falling"
-    elseif self.platformerState.state ~= "standing" and mapSlice[self.V+1][self.W] == 1 then
-        self.platformerState.state = "standing"
+    local newState = self.platformerState.state
+    local currentCell = mapSlice[self.V][self.W]
+    local belowCell = mapSlice[self.V + 1][self.W]
+    if currentCell == CT_LADDER or belowCell == CT_LADDER then
+        newState = "climbing"
+    elseif belowCell == CT_EMPTY then
+        newState = "falling"
+    elseif belowCell == CT_WALL then
+        newState = "standing"
+    end
+    if newState ~= self.platformerState.state then
+        self.redrawNeeded = true
+        self.platformerState.state = newState
     end
     now = pd.getCurrentTimeMilliseconds()
     if self.platformerState.state == "falling" and (self.platformerState.nextFall == nil or self.platformerState.nextFall < now) then
@@ -161,15 +190,19 @@ end
 function Player:handleInputGravity()
     if self.gravityState.state ~= "standing" then return end
     if pd.buttonJustPressed(pd.kButtonUp) then
+        self.sprite:setRotation(180)
         self.gravityState.gravity = "up"
     end
     if pd.buttonJustPressed(pd.kButtonLeft) then
+        self.sprite:setRotation(90)
         self.gravityState.gravity = "left"
     end
     if pd.buttonJustPressed(pd.kButtonRight) then
+        self.sprite:setRotation(-90)
         self.gravityState.gravity = "right"
     end
     if pd.buttonJustPressed(pd.kButtonDown) then
+        self.sprite:setRotation(0)
         self.gravityState.gravity = "down"
     end
 end
@@ -202,6 +235,9 @@ function Player:updatePhysicsGravity()
 end
 
 function Player:handleInput()
+    if MAP.visibleDialog ~= nil then
+        return
+    end
     if self.directions == 4 then
         self:handleInputPlatformer()
     elseif self.directions == 3 then
@@ -217,6 +253,9 @@ function Player:handleInputGlobal()
         self.directions = self.directions + 1
         if self.directions > #ROTATIONS then
             self.directions = 1
+        end
+        if self.directions == 4 or self.directions == 3 then
+            self.sprite:setRotation(0)
         end
         self.redrawNeeded = true
     end
@@ -273,5 +312,10 @@ function Player:getText()
     text = text .. (ud == "Z" and "ud  " or (lr == "Z" and "lr  " or "")) .. "Z " .. PLAYER.Z .. "\n"
     text = text .. (ud == "V" and "ud  " or (lr == "V" and "lr  " or "")) .. "V " .. PLAYER.V .. "\n"
     text = text .. (ud == "W" and "ud  " or (lr == "W" and "lr  " or "")) .. "W " .. PLAYER.W .. "\n"
+    if self.directions == 4 then
+        text = text .. (self.platformerState.state ~= nil and self.platformerState.state or "meh") .. "\n"
+    else
+        text = text .. "DIR" .. self.directions .. "\n"
+    end
     return text
 end

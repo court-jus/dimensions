@@ -1,0 +1,48 @@
+[
+    {
+        "type": "image",
+        "name": "001"
+    },
+    {
+        "type": "text",
+        "text_fr": "Cuby:\nCoucou Sandra.",
+        "text_en": "Cuby:\nHi, Sandra."
+    },
+    {
+        "type": "image",
+        "name": "002"
+    },
+    {
+        "type": "text",
+        "text_fr": "Sandra:\nC'est pour moi ?\nMerci beaucoup, Cuby !",
+        "text_en": "Sandra:\nA gift for me?\nThank you very much, Cuby!"
+    },
+    {
+        "type": "text",
+        "text_fr": "Sandra:\nAAAAAAAAATTTTTCHOUM !!!!",
+        "text_en": "Sandra:\nAAAAAAAAATTTTTCHOOO !!!!"
+    },
+    {
+        "type": "image",
+        "name": "003"
+    },
+    {
+        "type": "text",
+        "text_fr": "Sandra:\nMais Cuby, tu le sais pourtant que\nje suis allergique !",
+        "text_en": "Sandra:\nCuby, you know I'm allergic!"
+    },
+    {
+        "type": "text",
+        "text_fr": "Cuby:\nMais a laquelle de ces trois fleurs\nest-tu allergique ?",
+        "text_en": "Cuby:\nWhich of these three flowers\nare you allergic to?"
+    },
+    {
+        "type": "text",
+        "text_fr": "Sandra:\nTu devrais le savoir !",
+        "text_en": "Sandra:\nYou should know!"
+    },
+    {
+        "type": "image",
+        "name": "004"
+    }
+]

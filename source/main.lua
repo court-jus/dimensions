@@ -4,12 +4,16 @@ import "CoreLibs/sprites"
 import "CoreLibs/timer"
 
 import "sceneManager"
-import "gameScene"
+import "homeScene"
 
 local pd <const> = playdate
 local gfx <const> = pd.graphics
+
+local font = gfx.font.new("Fonts/MatchupPro/MatchupPro18")
+gfx.setFont(font)
+
 SCENE_MANAGER = SceneManager()
-GameScene()
+HomeScene()
 
 local function loadMain()
 end
@@ -28,4 +32,20 @@ function pd.update()
 	updateMain()
 	drawMain()
 	pd.drawFPS(0,0) -- FPS widget
+end
+
+--[[ Do stuff when opening/closing the system menu
+function playdate.gameWillPause()
+end
+function playdate.gameWillResume()
+end
+]]
+function pd.gameWillTerminate()
+	SCENE_MANAGER:saveSettings()
+end
+function pd.deviceWillLock()
+	SCENE_MANAGER:saveSettings()
+end
+function pd.deviceWillSleep()
+	SCENE_MANAGER:saveSettings()
 end
