@@ -2,6 +2,7 @@ import "CoreLibs/object"
 import "CoreLibs/graphics"
 import "CoreLibs/sprites"
 import "CoreLibs/timer"
+import "CoreLibs/frameTimer"
 
 import "sceneManager"
 import "homeScene"
@@ -20,6 +21,7 @@ end
 
 local function updateMain()
 	pd.timer.updateTimers()
+	pd.frameTimer.updateTimers()
 	gfx.sprite.update()
 end
 

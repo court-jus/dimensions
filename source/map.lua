@@ -1,18 +1,25 @@
 import "item"
 import "wall"
+import "spinner"
 
 local pd <const> = playdate
 local gfx <const> = pd.graphics
-local load_map <const> = "map_5.json"
+local default_map <const> = "map_5.json"
 
 class('Map').extends(gfx.sprite)
 
-function Map:init()
+function Map:init(options)
+    local spinner = Spinner()
     self.items = {}
     self.sprites = {}
     self.visibleDialog = nil
-    if load_map ~= nil then
-        local loadedMap = json.decodeFile("Maps/" .. load_map)
+    local loadedMap = nil
+    if options.loadGame then
+        loadedMap = json.decodeFile("save.json")
+    elseif default_map ~= nil then
+        loadedMap = json.decodeFile("Maps/" .. default_map)
+    end
+    if loadedMap ~= nil then
         self.walls = loadedMap.walls
         for _, item in ipairs(loadedMap.items) do
             self.items[#self.items+1] = Item(item)
@@ -46,10 +53,11 @@ function Map:init()
         self.walls[2][2][2][2][2] = 0 -- Player's starting position
     end
     self:add()
+    spinner:remove()
 end
 
 function Map:saveMap()
-    -- json.encodeToFile("map.json", true, self.walls)
+    local spinner = Spinner()
     local items = {}
     for _, item in ipairs(self.items) do
         items[#items+1] = item:dumpState()
@@ -59,6 +67,7 @@ function Map:saveMap()
         items = items,
         player = PLAYER:dumpState()
     })
+    spinner:remove()
 end
 
 function Map:updateSprites()
@@ -68,6 +77,9 @@ function Map:updateSprites()
     end
     for _, sprite in ipairs(self.sprites) do
         sprite:changeImage()
+    end
+    for _, item in ipairs(self.items) do
+        item:updateVisibility()
     end
 end
 
@@ -81,6 +93,24 @@ function Map:activateItem()
             item.W == PLAYER.W
         ) then
             item:action()
+        end
+    end
+end
+
+function Map:switchCellAtPlayerPosition()
+    local currentType = self.walls[PLAYER.X][PLAYER.Y][PLAYER.Z][PLAYER.V][PLAYER.W]
+    newType = currentType + 1
+    if newType > CT_MAX or (newType == CT_LADDER and PLAYER.directions ~= DIR_PLATFORMER) then
+        newType = 0
+    end
+    self.walls[PLAYER.X][PLAYER.Y][PLAYER.Z][PLAYER.V][PLAYER.W] = newType
+    self:updateSprites()
+end
+
+function Map:update()
+    if pd.buttonJustPressed(pd.kButtonA) and MAP.visibleDialog == nil then
+        if PLAYER.flags.levelEditor then
+            self:switchCellAtPlayerPosition()
         end
     end
 end

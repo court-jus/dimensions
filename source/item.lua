@@ -31,9 +31,13 @@ function Item:chooseImage()
 end
 
 function Item:update()
+end
+
+function Item:updateVisibility()
     if PLAYER == nil then return end
     local ud = ROTATIONS[PLAYER.directions].ud
     local lr = ROTATIONS[PLAYER.directions].lr
+    self.sprite:moveTo(self[lr] * 24 - 12, self[ud] * 24 - 12)
     if (
         (ud ~= "X" and lr ~= "X" and self.X ~= PLAYER.X) or
         (ud ~= "Y" and lr ~= "Y" and self.Y ~= PLAYER.Y) or
@@ -41,20 +45,17 @@ function Item:update()
         (ud ~= "V" and lr ~= "V" and self.V ~= PLAYER.V) or
         (ud ~= "W" and lr ~= "W" and self.W ~= PLAYER.W)
     ) then
-        if self.visible then
-            self.sprite:setVisible(false)
-            self.visible = false
-        end
+        self.sprite:setVisible(false)
+        self.visible = false
     else
-        if not self.visible then
-            self.sprite:setImage(self:chooseImage())
-            self.sprite:setVisible(true)
-            self.visible = true
-        end
+        self.sprite:setImage(self:chooseImage())
+        self.sprite:setVisible(true)
+        self.visible = true
     end
 end
 
 function Item:action()
+    if PLAYER.flags.levelEditor then return end
     if (self.type == "pnj" or self.type == "sign" or self.type == "house") and self.extra["text_" .. SCENE_MANAGER.lang] ~= nil and MAP ~= nil and MAP.visibleDialog == nil then
         local text = self.extra["text_" .. SCENE_MANAGER.lang]
         MAP.visibleDialog = Dialog(text)
@@ -84,8 +85,8 @@ function Item:loadState(state)
     self.type = state.type
     self.extra = state.extra
     self.sprite:setImage(self:chooseImage())
+    self.sprite:moveTo(self.X * 24 - 12, self.Y * 24 - 12)
     if self.visible then
-        self.sprite:moveTo(self.X * 24 - 12, self.Y * 24 - 12)
         self.sprite:setVisible(true)
     else
         self.sprite:setVisible(false)

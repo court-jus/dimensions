@@ -14,7 +14,17 @@ local menuChoices <const> = {
         text_fr = "Nouvelle partie",
         text_en = "New game",
         scene = GameScene,
-        options = nil
+        options = {
+            loadGame = false
+        }
+    },
+    {
+        text_fr = "Continuer partie",
+        text_en = "Continue game",
+        scene = GameScene,
+        options = {
+            loadGame = true
+        }
     },
     {
         text_fr = "Switch to english",

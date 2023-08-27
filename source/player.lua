@@ -28,6 +28,15 @@ ROTATIONS = {
 CT_EMPTY = 0
 CT_WALL = 1
 CT_LADDER = 2
+CT_MAX = 2
+
+-- Direction (aka plane)
+DIR_XY = 1
+DIR_YZ = 2
+DIR_ZV = 3
+DIR_GRAVITY = DIR_ZV
+DIR_VW = 4
+DIR_PLATFORMER = DIR_VW
 
 JUMP_FORCE = -3
 
@@ -59,6 +68,7 @@ function Player:init()
     }
     self.flags = {
         levelEditor = true,
+        digging = false,
     }
     self.redrawNeeded = true
     self:add()
@@ -241,9 +251,9 @@ function Player:handleInput()
     if MAP.visibleDialog ~= nil then
         return
     end
-    if self.directions == 4 then
+    if self.directions == DIR_PLATFORMER then
         self:handleInputPlatformer()
-    elseif self.directions == 3 then
+    elseif self.directions == DIR_GRAVITY then
         self:handleInputGravity()
     else
         self:handleInputLaby()
@@ -257,7 +267,7 @@ function Player:handleInputGlobal()
         if self.directions > #ROTATIONS then
             self.directions = 1
         end
-        if self.directions == 4 or self.directions == 3 then
+        if self.directions == DIR_PLATFORMER or self.directions == DIR_GRAVITY then
             self.sprite:setRotation(0)
         end
         self.redrawNeeded = true
@@ -265,7 +275,7 @@ function Player:handleInputGlobal()
 end
 
 function Player:updatePhysics()
-    if self.directions == 4 then
+    if self.directions == DIR_PLATFORMER then
         self:updatePhysicsPlatformer()
     else
         self.platformerState = {
@@ -274,7 +284,7 @@ function Player:updatePhysics()
             velocity = 0,
         }
     end
-    if self.directions == 3 then
+    if self.directions == DIR_GRAVITY then
         self:updatePhysicsGravity()
     else
         self.gravityState = {
@@ -315,10 +325,15 @@ function Player:getText()
     text = text .. (ud == "Z" and "ud  " or (lr == "Z" and "lr  " or "")) .. "Z " .. PLAYER.Z .. "\n"
     text = text .. (ud == "V" and "ud  " or (lr == "V" and "lr  " or "")) .. "V " .. PLAYER.V .. "\n"
     text = text .. (ud == "W" and "ud  " or (lr == "W" and "lr  " or "")) .. "W " .. PLAYER.W .. "\n"
-    if self.directions == 4 then
+    if self.directions == DIR_PLATFORMER then
         text = text .. (self.platformerState.state ~= nil and self.platformerState.state or "meh") .. "\n"
     else
         text = text .. "DIR" .. self.directions .. "\n"
+    end
+    for flag, enabled in pairs(self.flags) do
+        if enabled then
+            text = text .. flag .. "\n"
+        end
     end
     return text
 end

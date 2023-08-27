@@ -1,4 +1,5 @@
 import "gameOverScene"
+import "menuScene"
 import "player"
 import "map"
 
@@ -10,31 +11,32 @@ MAP = nil
 
 class('GameScene').extends(gfx.sprite)
 
-function GameScene:init(_)
+function GameScene:init(options)
     PLAYER = Player()
-    MAP = Map()
+    if options.loadGame then
+        MAP = Map({loadGame=true})
+    else
+        MAP = Map({loadGame=false})
+    end
     self:add()
     MAP:updateSprites()
     PLAYER:updateHud()
     local menu = pd.getSystemMenu()
-    local items = menu:getMenuItems()
-    printTable(items)
 
-    local menuItem, error = menu:addMenuItem("Item 1", function()
-        print("Item 1 selected")
+    menu:addMenuItem("Save map", function()
+        MAP:saveMap()
     end)
 
-    local checkmarkMenuItem, error = menu:addCheckmarkMenuItem("Editor", PLAYER.flags.levelEditor, function(value)
+    menu:addMenuItem("to menu", function()
+        SCENE_MANAGER:switchScene(MenuScene, nil)
+    end)
+
+    menu:addCheckmarkMenuItem("Editor", PLAYER.flags.levelEditor, function(value)
         PLAYER.flags.levelEditor = value
-        print("Level editor: ", value)
+        PLAYER:updateHud()
     end)
 end
 
 
 function GameScene:update()
-    if pd.buttonJustPressed(pd.kButtonA) and (MAP == nil or MAP.visibleDialog == nil) then
-        -- act depending on the flags and the system menu
-        -- MAP:saveMap()
-        SCENE_MANAGER:switchScene(GameOverScene, nil)
-    end
 end

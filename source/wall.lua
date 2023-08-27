@@ -74,7 +74,7 @@ function Wall:chooseImage()
         dimensions[lr] = self.X
         vWalls[dimensions.V]:draw(0, 0)
         wWalls[dimensions.W]:draw(0, 0)
-    elseif cellType == 2 and PLAYER.directions == 4 then -- Ladder
+    elseif cellType == 2 and PLAYER.directions == DIR_PLATFORMER then -- Ladder
         ladderImage:draw(0, 0)
     end
     gfx.popContext()
